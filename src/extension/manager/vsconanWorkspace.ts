@@ -94,7 +94,9 @@ export class VSConanWorkspaceManager extends ExtensionManager {
         let selectedProfile: string | undefined = this.settingsPropertyManager.getSelectedConanProfile();
         this.settingsPropertyManager.getConanProfileObject(selectedProfile!).then(selectedProfileObject => {
             if (selectedProfileObject && selectedProfileObject.isValid()) {
-                this.statusBarConanVersion.text = `$(extensions) VSConan | conan${selectedProfileObject.conanVersion} - ${selectedProfile}`;
+                const activeEnv = this.workspaceEnvironment.activeEnv();
+                const activeEnvStr = activeEnv ? ` - ${activeEnv}` : '';
+                this.statusBarConanVersion.text = `$(extensions) VSConan | conan${selectedProfileObject.conanVersion} - ${selectedProfile}${activeEnvStr}`;
                 this.statusBarConanVersion.color = "";
             }
             else {
@@ -219,7 +221,6 @@ export class VSConanWorkspaceManager extends ExtensionManager {
                 commandBuilder = CommandBuilderFactory.getCommandBuilder(conanVersion!);
 
                 conanProfileObject = await this.settingsPropertyManager.getConanProfileObject(currentConanProfile!);
-                console.log(conanProfileObject);
 
                 if (conanProfileObject?.conanExecutionMode === "pythonInterpreter" && conanProfileObject.conanPythonInterpreter) {
                     conanCommand = `${conanProfileObject.conanPythonInterpreter} -m conans.conan`;
@@ -359,6 +360,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
      */
     private executeCommandDeactivateEnv() {
         this.workspaceEnvironment.restoreEnvironment();
+        this.updateStatusBar();
     }
 
     /**
@@ -378,7 +380,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
                 let selectedConfig = configList[index];
                 let cmd = commandBuilder.buildCommandInstall(wsPath, selectedConfig);
                 cmd = cmd?.split(" ").slice(1).join(" ") ?? ""; // cut of "install" from cmd
-                this.workspaceEnvironment.activateEnvironment(whichEnv, pythonInterpreter, cmd);
+                this.workspaceEnvironment.activateEnvironment(whichEnv, pythonInterpreter, cmd).then(this.updateStatusBar);
             }
         });
     }

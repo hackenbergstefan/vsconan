@@ -14,8 +14,8 @@ type EnvVars = Array<[string, string | undefined]>;
  * Enum to distinguish between different Conan environments.
  */
 export enum ConanEnv {
-    buildEnv,
-    runEnv
+    buildEnv = "BuildEnv",
+    runEnv = "RunEnv"
 }
 
 /**
@@ -39,14 +39,15 @@ export class VSConanWorkspaceEnvironment {
      * @param pythonInterpreter Path to python interpreter
      * @param args Additional Conan arguments as given to `conan install`
      */
-    public activateEnvironment(conanEnv: ConanEnv, pythonInterpreter: string, args: string) {
+    public async activateEnvironment(conanEnv: ConanEnv, pythonInterpreter: string, args: string) {
         this.restoreEnvironment();
         const newenv = this.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
-        this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
         this.updateVSCodeEnvironment(newenv);
-        vscode.commands.executeCommand('workbench.action.restartExtensionHost');
+        await this.context.workspaceState.update("vsconan.activeEnv", [conanEnv]);
+        await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
+        await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
     }
 
     /**
@@ -58,6 +59,7 @@ export class VSConanWorkspaceEnvironment {
             this.updateVSCodeEnvironment(backupEnv);
         }
         this.updateDotEnvFile([]);
+        this.context.workspaceState.update("vsconan.activeEnv", undefined);
     }
 
     /**
@@ -111,8 +113,7 @@ export class VSConanWorkspaceEnvironment {
      */
     private readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string): [string, string][] {
         const envScript = path.join(path.dirname(__dirname), '..', '..', '..', 'resources', 'print_env.py');
-        const whichenv = conanEnv === ConanEnv.buildEnv ? "BuildEnv" : "RunEnv";
-        let output = execSync(`${pythonInterpreter} ${envScript} ${whichenv} ${args}`);
+        let output = execSync(`${pythonInterpreter} ${envScript} ${conanEnv} ${args}`);
         return Object.entries(JSON.parse(`${output}`));
     }
 
@@ -135,6 +136,10 @@ export class VSConanWorkspaceEnvironment {
         }).catch(reject => {
             vscode.window.showInformationMessage("No workspace detected.");
         });
+    }
+
+    public activeEnv(): ConanEnv | undefined {
+        return this.context.workspaceState.get<[ConanEnv]>("vsconan.activeEnv")?.[0];
     }
 
 }
