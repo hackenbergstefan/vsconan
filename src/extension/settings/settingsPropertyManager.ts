@@ -139,7 +139,6 @@ export class SettingsPropertyManager {
             }
         }
 
-        console.log(profileObject);
         return profileObject;
     }
 
