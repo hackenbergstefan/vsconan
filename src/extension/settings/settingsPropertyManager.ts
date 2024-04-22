@@ -129,6 +129,17 @@ export class SettingsPropertyManager {
             }
         }
 
+        let pythonInterpreter = await python.getCurrentPythonInterpreter();
+        if (pythonInterpreter !== undefined) {
+            if (!profileObject?.conanPythonInterpreter) {
+                profileObject!.conanPythonInterpreter = pythonInterpreter;
+            }
+            if (!profileObject?.conanExecutable) {
+                profileObject!.conanExecutable = path.join(path.dirname(pythonInterpreter), "conan");
+            }
+        }
+
+        console.log(profileObject);
         return profileObject;
     }
 
