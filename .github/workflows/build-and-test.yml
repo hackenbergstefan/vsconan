@@ -2,7 +2,7 @@ name: 'Build & Test'
 
 on:
   push:
-    
+
   pull_request:
     branches:
       - main
@@ -21,3 +21,9 @@ jobs:
     - run: npm install
     - run: npm run compile
     - run: npm run test
+    - run: npm run package
+    - name: Archive extension
+      uses: actions/upload-artifact@v4
+      with:
+        name: vsconan.vsix
+        path: vsconan-*.vsix

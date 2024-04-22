@@ -187,4 +187,8 @@ export class SettingsPropertyManager {
 
         return isAvailable;
     }
+
+    public isUpdateDotEnv(): boolean | undefined {
+        return vscode.workspace.getConfiguration("vsconan.conan").get("env.dotenv");
+    }
 }
