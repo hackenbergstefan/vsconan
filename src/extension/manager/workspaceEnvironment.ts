@@ -55,6 +55,7 @@ export class VSConanWorkspaceEnvironment {
      */
     public restoreEnvironment() {
         const backupEnv = this.context.workspaceState.get<EnvVars>("vsconan.backupEnv");
+        console.log(`[vsconan] restoreEnvironment: ${backupEnv}`);
         if (backupEnv) {
             this.updateVSCodeEnvironment(backupEnv);
         }
@@ -73,7 +74,7 @@ export class VSConanWorkspaceEnvironment {
         let newBackupEnv: EnvVars = [];
         newenv.forEach(([key, value]) => {
             if (backupEnv.has(key)) {
-                newBackupEnv.push([key, value]);
+                newBackupEnv.push([key, backupEnv.get(key)]);
             } else {
                 // TODO: Take really from process env??
                 newBackupEnv.push([key, process.env[key]]);
