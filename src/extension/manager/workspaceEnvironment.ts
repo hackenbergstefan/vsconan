@@ -36,16 +36,17 @@ export class VSConanWorkspaceEnvironment {
      * Extend VSCode's environment by environment variables from Conan.
      *
      * @param conanEnv Which Conan environment to activate
+     * @param configName Config name
      * @param pythonInterpreter Path to python interpreter
      * @param args Additional Conan arguments as given to `conan install`
      */
-    public async activateEnvironment(conanEnv: ConanEnv, pythonInterpreter: string, args: string) {
+    public async activateEnvironment(conanEnv: ConanEnv, configName: String, pythonInterpreter: string, args: string) {
         this.restoreEnvironment();
         const newenv = this.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
         this.updateVSCodeEnvironment(newenv);
-        await this.context.workspaceState.update("vsconan.activeEnv", [conanEnv]);
+        await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv]);
         await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
         await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
     }
@@ -140,8 +141,8 @@ export class VSConanWorkspaceEnvironment {
         });
     }
 
-    public activeEnv(): ConanEnv | undefined {
-        return this.context.workspaceState.get<[ConanEnv]>("vsconan.activeEnv")?.[0];
+    public activeEnv(): [String, ConanEnv] | undefined {
+        return this.context.workspaceState.get<[String, ConanEnv]>("vsconan.activeEnv");
     }
 
 }
