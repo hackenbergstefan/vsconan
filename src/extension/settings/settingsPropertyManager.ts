@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import { ConanProfileConfiguration } from "./model";
 import { general, python } from "../../utils/utils";
+import { ConanProfileConfiguration } from "./model";
 import path = require("path");
 
 /**
@@ -114,7 +114,8 @@ export class SettingsPropertyManager {
                 profileObject!.conanPythonInterpreter = pythonInterpreter;
             }
             if (!profileObject?.conanExecutable) {
-                profileObject!.conanExecutable = path.join(path.dirname(pythonInterpreter), "conan");
+                const exePostfix = process.platform === 'win32' ? '.exe' : '';
+                profileObject!.conanExecutable = path.join(path.dirname(pythonInterpreter), `conan${exePostfix}`);
             }
         }
 
