@@ -42,13 +42,14 @@ export class VSConanWorkspaceEnvironment {
      */
     public async activateEnvironment(conanEnv: ConanEnv, configName: String, pythonInterpreter: string, args: string) {
         this.restoreEnvironment();
-        const newenv = this.readEnvFromConan(conanEnv, pythonInterpreter, args);
+        const newenv = await this.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
         this.updateVSCodeEnvironment(newenv);
         await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv]);
         await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
         await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
+        await vscode.window.showInformationMessage(`Activated Environment ${configName}[${conanEnv}]`);
     }
 
     /**
@@ -62,6 +63,7 @@ export class VSConanWorkspaceEnvironment {
         }
         this.updateDotEnvFile([]);
         this.context.workspaceState.update("vsconan.activeEnv", undefined);
+        vscode.window.showInformationMessage('Restored Environment');
     }
 
     /**
@@ -113,11 +115,19 @@ export class VSConanWorkspaceEnvironment {
      * @param args Additional Conan arguments as given to `conan install`
      * @returns Array of environment settings
      */
-    private readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string): [string, string][] {
+    private async readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string): Promise<[string, string][]> {
         const envScript = path.join(path.dirname(__dirname), '..', '..', '..', 'resources', 'print_env.py');
         const options = { 'timeout': 20000, 'cwd': vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined };
-        let output = execSync(`${pythonInterpreter} ${envScript} ${conanEnv} ${args}`, options);
-        return Object.entries(JSON.parse(`${output}`));
+
+        const cmd = `${pythonInterpreter} ${envScript} ${conanEnv} ${args}`;
+        await this.outputChannel.appendLine(`Executing "${cmd}" with "${JSON.stringify(options)}"`);
+        try {
+            let output = execSync(cmd, options);
+            return Object.entries(JSON.parse(`${output}`));
+        } catch (err) {
+            vscode.window.showErrorMessage((err as Error).message);
+            throw err;
+        }
     }
 
     /**
