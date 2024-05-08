@@ -95,7 +95,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
         this.settingsPropertyManager.getConanProfileObject(selectedProfile!).then(selectedProfileObject => {
             if (selectedProfileObject && selectedProfileObject.isValid()) {
                 const activeEnv = this.workspaceEnvironment.activeEnv();
-                const activeEnvStr = activeEnv ? ` - ${activeEnv}` : '';
+                const activeEnvStr = activeEnv ? ` - ${activeEnv[0]}[${activeEnv[1]}]` : '';
                 this.statusBarConanVersion.text = `$(extensions) VSConan | conan${selectedProfileObject.conanVersion} - ${selectedProfile}${activeEnvStr}`;
                 this.statusBarConanVersion.color = "";
             }
@@ -380,7 +380,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
                 let selectedConfig = configList[index];
                 let cmd = commandBuilder.buildCommandInstall(wsPath, selectedConfig);
                 cmd = cmd?.split(" ").slice(1).join(" ") ?? ""; // cut of "install" from cmd
-                this.workspaceEnvironment.activateEnvironment(whichEnv, pythonInterpreter, cmd).then(this.updateStatusBar);
+                this.workspaceEnvironment.activateEnvironment(whichEnv, selectedConfig.name, pythonInterpreter, cmd).then(this.updateStatusBar);
             }
         });
     }
