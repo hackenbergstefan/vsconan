@@ -113,7 +113,8 @@ export class VSConanWorkspaceEnvironment {
      */
     private readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string): [string, string][] {
         const envScript = path.join(path.dirname(__dirname), '..', '..', '..', 'resources', 'print_env.py');
-        let output = execSync(`${pythonInterpreter} ${envScript} ${conanEnv} ${args}`);
+        const options = { 'timeout': 20000, 'cwd': vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined };
+        let output = execSync(`${pythonInterpreter} ${envScript} ${conanEnv} ${args}`, options);
         return Object.entries(JSON.parse(`${output}`));
     }
 

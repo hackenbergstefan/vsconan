@@ -135,7 +135,8 @@ export class SettingsPropertyManager {
                 profileObject!.conanPythonInterpreter = pythonInterpreter;
             }
             if (!profileObject?.conanExecutable) {
-                profileObject!.conanExecutable = path.join(path.dirname(pythonInterpreter), "conan");
+                const exePostfix = process.platform === 'win32' ? '.exe' : '';
+                profileObject!.conanExecutable = path.join(path.dirname(pythonInterpreter), `conan${exePostfix}`);
             }
         }
 
