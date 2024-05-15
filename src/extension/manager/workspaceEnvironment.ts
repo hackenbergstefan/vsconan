@@ -45,7 +45,7 @@ export class VSConanWorkspaceEnvironment {
         const newenv = await this.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
-        this.updateVSCodeEnvironment(newenv);
+        this.updateVSCodeEnvironment(newenv, path.dirname(pythonInterpreter));
         await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv]);
         await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
         await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
@@ -63,7 +63,6 @@ export class VSConanWorkspaceEnvironment {
         }
         this.updateDotEnvFile([]);
         this.context.workspaceState.update("vsconan.activeEnv", undefined);
-        vscode.window.showInformationMessage('Restored Environment');
     }
 
     /**
@@ -75,7 +74,7 @@ export class VSConanWorkspaceEnvironment {
     private updateBackupEnvironment(newenv: EnvVars) {
         let backupEnv = new Map(this.context.workspaceState.get<EnvVars>("vsconan.backupEnv"));
         let newBackupEnv: EnvVars = [];
-        newenv.forEach(([key, value]) => {
+        newenv.forEach(([key, _]) => {
             if (backupEnv.has(key)) {
                 newBackupEnv.push([key, backupEnv.get(key)]);
             } else {
@@ -91,14 +90,18 @@ export class VSConanWorkspaceEnvironment {
      * Update VSCode's process and terminal environment.
      *
      * @param data Environment variables to apply
+     * @param additionalPATH Additional entries to prepend to PATH
      */
-    private updateVSCodeEnvironment(data: EnvVars) {
+    private updateVSCodeEnvironment(data: EnvVars, additionalPATH?: String) {
         console.log(`[vsconan] updateVSCodeEnvironment: ${data}`);
         data.forEach(([key, value]) => {
             if (!value) {
                 delete process.env[key];
                 this.context.environmentVariableCollection.delete(key);
             } else {
+                if (key === "PATH") {
+                    value = `${additionalPATH}${path.delimiter}${value}`;
+                }
                 process.env[key] = value;
                 this.context.environmentVariableCollection.replace(key, value);
             }
