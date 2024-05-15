@@ -40,7 +40,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
     private workspaceEnvironment: VSConanWorkspaceEnvironment;
 
     private statusBarConanVersion: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-    private statusBarCommands: vscode.StatusBarItem[] = Array.from({ length: 5 }, _ => vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left));
+    private statusBarCommands: vscode.StatusBarItem[] = Array.from({ length: 6 }, _ => vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left));
 
     /**
      * Create the conan workspace manager
@@ -116,6 +116,11 @@ export class VSConanWorkspaceManager extends ExtensionManager {
         this.statusBarCommands[4].tooltip = "Activate conan RunEnv";
         this.statusBarCommands[4].command = "vsconan.conan.runenv";
         this.statusBarCommands[4].show();
+
+        this.statusBarCommands[5].text = "X$(server-process)";
+        this.statusBarCommands[5].tooltip = "Deactivate conan BuildEnv/RunEnv";
+        this.statusBarCommands[5].command = "vsconan.conan.deactivateenv";
+        this.statusBarCommands[5].show();
 
         this.context.subscriptions.push(this.statusBarConanVersion);
     }
