@@ -30,6 +30,11 @@ export class VSConanWorkspaceEnvironment {
         this.context = context;
         this.settingsPropertyManager = settingsPropertyManager;
         this.outputChannel = outputChannel;
+
+        const activeEnv = this.activeEnv();
+        if (activeEnv) {
+            this.updateVSCodeEnvironment(activeEnv[2]);
+        }
     }
 
     /**
@@ -40,13 +45,13 @@ export class VSConanWorkspaceEnvironment {
      * @param pythonInterpreter Path to python interpreter
      * @param args Additional Conan arguments as given to `conan install`
      */
-    public async activateEnvironment(conanEnv: ConanEnv, configName: String, pythonInterpreter: string, args: string) {
+    public async activateEnvironment(conanEnv: ConanEnv, configName: string, pythonInterpreter: string, args: string) {
         this.restoreEnvironment();
-        const newenv = await this.readEnvFromConan(conanEnv, pythonInterpreter, args);
+        var newenv = await this.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
-        this.updateVSCodeEnvironment(newenv, path.dirname(pythonInterpreter));
-        await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv]);
+        this.updateVSCodeEnvironment(newenv);
+        await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv, newenv]);
         await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
         await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
         await vscode.window.showInformationMessage(`Activated Environment ${configName}[${conanEnv}]`);
@@ -92,16 +97,13 @@ export class VSConanWorkspaceEnvironment {
      * @param data Environment variables to apply
      * @param additionalPATH Additional entries to prepend to PATH
      */
-    private updateVSCodeEnvironment(data: EnvVars, additionalPATH?: String) {
+    private updateVSCodeEnvironment(data: EnvVars) {
         console.log(`[vsconan] updateVSCodeEnvironment: ${data}`);
         data.forEach(([key, value]) => {
             if (!value) {
                 delete process.env[key];
                 this.context.environmentVariableCollection.delete(key);
             } else {
-                if (key === "PATH") {
-                    value = `${additionalPATH}${path.delimiter}${value}`;
-                }
                 process.env[key] = value;
                 this.context.environmentVariableCollection.replace(key, value);
             }
@@ -125,8 +127,10 @@ export class VSConanWorkspaceEnvironment {
         const cmd = `${pythonInterpreter} ${envScript} ${conanEnv} ${args}`;
         await this.outputChannel.appendLine(`Executing "${cmd}" with "${JSON.stringify(options)}"`);
         try {
-            let output = execSync(cmd, options);
-            return Object.entries(JSON.parse(`${output}`));
+            const output = execSync(cmd, options);
+            let parsed = JSON.parse(`${output}`);
+            parsed['PATH'] = `${path.dirname(pythonInterpreter)}${path.delimiter}${parsed['PATH']}`;
+            return Object.entries(parsed);
         } catch (err) {
             vscode.window.showErrorMessage((err as Error).message);
             throw err;
@@ -154,8 +158,8 @@ export class VSConanWorkspaceEnvironment {
         });
     }
 
-    public activeEnv(): [String, ConanEnv] | undefined {
-        return this.context.workspaceState.get<[String, ConanEnv]>("vsconan.activeEnv");
+    public activeEnv(): [string, ConanEnv, [string, string][]] | undefined {
+        return this.context.workspaceState.get<[string, ConanEnv, [string, string][]]>("vsconan.activeEnv");
     }
 
 }
