@@ -52,7 +52,11 @@ export class VSConanWorkspaceEnvironment {
 
         this.updateVSCodeEnvironment(newenv);
         await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv, newenv]);
-        await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
+        if (vscode.env.remoteName === undefined) {
+            await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
+        } else {
+            await vscode.commands.executeCommand('workbench.action.reloadWindow');
+        }
         await this.outputChannel.appendLine(`Activate ${conanEnv}: ${JSON.stringify(newenv, null, 2)}`);
         await vscode.window.showInformationMessage(`Activated Environment ${configName}[${conanEnv}]`);
     }
