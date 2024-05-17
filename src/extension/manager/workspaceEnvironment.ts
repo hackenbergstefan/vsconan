@@ -10,6 +10,9 @@ import path = require('path');
  */
 type EnvVars = Array<[string, string | undefined]>;
 
+const activeEnvVersion: number = 1;
+type ActiveEnv = [version: number, configName: string, conanEnv: ConanEnv, envValues: [string, string][]];
+
 /**
  * Enum to distinguish between different Conan environments.
  */
@@ -33,7 +36,7 @@ export class VSConanWorkspaceEnvironment {
 
         const activeEnv = this.activeEnv();
         if (activeEnv) {
-            this.updateVSCodeEnvironment(activeEnv[2]);
+            this.updateVSCodeEnvironment(activeEnv[3]);
         }
     }
 
@@ -51,7 +54,8 @@ export class VSConanWorkspaceEnvironment {
         this.updateBackupEnvironment(newenv);
 
         this.updateVSCodeEnvironment(newenv);
-        await this.context.workspaceState.update("vsconan.activeEnv", [configName, conanEnv, newenv]);
+        const activeEnv: ActiveEnv = [activeEnvVersion, configName, conanEnv, newenv];
+        await this.context.workspaceState.update("vsconan.activeEnv", activeEnv);
         if (vscode.env.remoteName === undefined) {
             await vscode.commands.executeCommand('workbench.action.restartExtensionHost');
         } else {
@@ -162,8 +166,12 @@ export class VSConanWorkspaceEnvironment {
         });
     }
 
-    public activeEnv(): [string, ConanEnv, [string, string][]] | undefined {
-        return this.context.workspaceState.get<[string, ConanEnv, [string, string][]]>("vsconan.activeEnv");
+    public activeEnv(): ActiveEnv | undefined {
+        const activeEnv = this.context.workspaceState.get<ActiveEnv>("vsconan.activeEnv");
+        if (activeEnv?.[0] === activeEnvVersion) {
+            return activeEnv;
+        }
+        return undefined;
     }
 
 }

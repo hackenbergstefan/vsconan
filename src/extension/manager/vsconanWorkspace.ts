@@ -130,7 +130,7 @@ export class VSConanWorkspaceManager extends ExtensionManager {
         this.settingsPropertyManager.getConanProfileObject(selectedProfile!).then(selectedProfileObject => {
             if (selectedProfileObject && selectedProfileObject.isValid()) {
                 const activeEnv = this.workspaceEnvironment.activeEnv();
-                const activeEnvStr = activeEnv ? ` - ${activeEnv[0]}[${activeEnv[1]}]` : '';
+                const activeEnvStr = activeEnv ? ` - ${activeEnv[1]}[${activeEnv[2]}]` : '';
                 this.statusBarConanVersion.text = `$(extensions) VSConan | conan${selectedProfileObject.conanVersion} - ${selectedProfile}${activeEnvStr}`;
                 this.statusBarConanVersion.color = "";
                 this.statusBarConanVersion.tooltip = new vscode.MarkdownString(`### Python Interpreter\n\`${selectedProfileObject.conanPythonInterpreter}\`\n### Conan Executable\n\`${selectedProfileObject.conanExecutable}\``);
