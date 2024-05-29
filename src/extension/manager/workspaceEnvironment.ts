@@ -103,7 +103,6 @@ export class VSConanWorkspaceEnvironment {
      * Update VSCode's process and terminal environment.
      *
      * @param data Environment variables to apply
-     * @param additionalPATH Additional entries to prepend to PATH
      */
     private updateVSCodeEnvironment(data: EnvVars) {
         console.log(`[vsconan] updateVSCodeEnvironment: ${data}`);
@@ -136,8 +135,7 @@ export class VSConanWorkspaceEnvironment {
         await this.outputChannel.appendLine(`Executing "${cmd}" with "${JSON.stringify(options)}"`);
         try {
             const output = execSync(cmd, options);
-            let parsed = JSON.parse(`${output}`);
-            parsed['PATH'] = `${path.dirname(pythonInterpreter)}${path.delimiter}${parsed['PATH']}`;
+            const parsed = JSON.parse(`${output}`);
             return Object.entries(parsed);
         } catch (err) {
             vscode.window.showErrorMessage((err as Error).message);

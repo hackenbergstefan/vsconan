@@ -1,11 +1,12 @@
 import argparse
 import os
+import sys
 
-from conan.tools.env import VirtualBuildEnv, VirtualRunEnv
 from conan.api import conan_api
 from conan.api.output import ConanOutput
 from conan.cli.args import common_graph_args, validate_common_graph_args
 from conan.errors import ConanException
+from conan.tools.env import VirtualBuildEnv, VirtualRunEnv
 
 
 def print_env(conan_api, whichenv, args):
@@ -78,6 +79,9 @@ if __name__ == "__main__":
 
     ConanOutput.define_log_level("quiet")
     env = print_env(conan_api.ConanAPI(), args.whichenv, args)
+    env["PATH"] = os.pathsep.join(
+        (os.path.dirname(sys.executable), env.get("PATH", os.environ["PATH"]))
+    )
 
     import json
 
