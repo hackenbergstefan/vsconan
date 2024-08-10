@@ -1,4 +1,3 @@
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as utils from '../../utils/utils';
@@ -10,16 +9,12 @@ import path = require('path');
  */
 type EnvVars = Array<[string, string | undefined]>;
 
-const activeEnvVersion: number = 1;
-type ActiveEnv = [version: number, configName: string, conanEnv: ConanEnv, envValues: [string, string][]];
-
 /**
- * Enum to distinguish between different Conan environments.
+ * Tag workspace Metadata with version for easy upgrades.
  */
-export enum ConanEnv {
-    buildEnv = "BuildEnv",
-    runEnv = "RunEnv"
-}
+const activeEnvVersion: number = 1;
+type ActiveEnv = [version: number, configName: string, conanEnv: utils.conan.ConanEnv, envValues: [string, string][]];
+
 
 /**
  * Manage VSCode's process and terminal environment.
@@ -48,9 +43,9 @@ export class VSConanWorkspaceEnvironment {
      * @param pythonInterpreter Path to python interpreter
      * @param args Additional Conan arguments as given to `conan install`
      */
-    public async activateEnvironment(conanEnv: ConanEnv, configName: string, pythonInterpreter: string, args: string) {
+    public async activateEnvironment(conanEnv: utils.conan.ConanEnv, configName: string, pythonInterpreter: string, args: string[]) {
         this.restoreEnvironment();
-        var newenv = await this.readEnvFromConan(conanEnv, pythonInterpreter, args);
+        var newenv = await utils.conan.readEnvFromConan(conanEnv, pythonInterpreter, args);
         this.updateBackupEnvironment(newenv);
 
         this.updateVSCodeEnvironment(newenv);
@@ -117,30 +112,6 @@ export class VSConanWorkspaceEnvironment {
         });
 
         this.updateDotEnvFile(data);
-    }
-
-    /**
-     * Read environment variables from Conan's VirtualBuildEnv/VirtualRunEnv.
-     *
-     * @param conanEnv Which environment to generate
-     * @param pythonInterpreter Path to python interpreter
-     * @param args Additional Conan arguments as given to `conan install`
-     * @returns Array of environment settings
-     */
-    private async readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string): Promise<[string, string][]> {
-        const envScript = path.join(path.dirname(__dirname), '..', '..', '..', 'resources', 'print_env.py');
-        const options = { 'timeout': 20000, 'cwd': vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined };
-
-        const cmd = `${pythonInterpreter} ${envScript} ${conanEnv} ${args}`;
-        await this.outputChannel.appendLine(`Executing "${cmd}" with "${JSON.stringify(options)}"`);
-        try {
-            const output = execSync(cmd, options);
-            const parsed = JSON.parse(`${output}`);
-            return Object.entries(parsed);
-        } catch (err) {
-            vscode.window.showErrorMessage((err as Error).message);
-            throw err;
-        }
     }
 
     /**

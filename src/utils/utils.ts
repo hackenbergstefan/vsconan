@@ -1,5 +1,5 @@
 import { PythonExtension } from '@vscode/python-extension';
-import { spawn } from "child_process";
+import { execSync, spawn } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -64,8 +64,9 @@ export namespace vsconan {
             // const exec = util.promisify(require('child_process').exec);
             // const { stdout, stderr } = await spawn(cmd);
             channel.show();
+            channel.appendLine(`Executing: "${cmd} ${args.join(' ')}`);
 
-            const ls = spawn(cmd, [], { shell: true, 'cwd': vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined });
+            const ls = spawn(cmd, args, { shell: true, 'cwd': vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined });
 
             ls.stdout.on("data", data => {
                 channel.append(`${data}`);
@@ -111,6 +112,14 @@ export namespace vsconan {
 
 export namespace conan {
     /**
+     * Enum to distinguish between different Conan environments.
+     */
+    export enum ConanEnv {
+        buildEnv = "BuildEnv",
+        runEnv = "RunEnv"
+    }
+
+    /**
      * Utility function to determine whether a folder is a conan project
      * by checking if the folder contains conanfile.py or conanfile.txt
      * @param ws Absolute path to workspace to be checked
@@ -128,6 +137,30 @@ export namespace conan {
 
         return ret;
     }
+
+    /**
+     * Read environment variables from Conan's VirtualBuildEnv/VirtualRunEnv.
+     *
+     * @param conanEnv Which environment to generate
+     * @param pythonInterpreter Path to python interpreter
+     * @param args Additional Conan arguments as given to `conan install`
+     * @returns Array of environment settings
+     */
+    export async function readEnvFromConan(conanEnv: ConanEnv, pythonInterpreter: string, args: string[]): Promise<[string, string][]> {
+        const envScript = path.join(path.dirname(__dirname), '..', 'resources', 'print_env.py');
+        const options = { timeout: 20000, cwd: vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined };
+
+        const cmd = `${pythonInterpreter} ${envScript} ${conanEnv} ${args.join(' ')}`;
+        try {
+            const output = execSync(cmd, options);
+            const parsed = JSON.parse(`${output}`);
+            return Object.entries(parsed);
+        } catch (err) {
+            vscode.window.showErrorMessage((err as Error).message);
+            throw err;
+        }
+    }
+
 }
 
 export namespace editor {

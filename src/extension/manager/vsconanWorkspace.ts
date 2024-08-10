@@ -11,7 +11,7 @@ import * as utils from '../../utils/utils';
 import { ConanProfileConfiguration } from "../settings/model";
 import { SettingsPropertyManager } from "../settings/settingsPropertyManager";
 import { ExtensionManager } from "./extensionManager";
-import { ConanEnv, VSConanWorkspaceEnvironment } from "./workspaceEnvironment";
+import { VSConanWorkspaceEnvironment } from "./workspaceEnvironment";
 
 enum ConanCommand {
     create,
@@ -305,11 +305,11 @@ export class VSConanWorkspaceManager extends ExtensionManager {
                     break;
                 }
                 case ConanCommand.activateBuildEnv: {
-                    this.executeCommandActivateEnv(wsPath!, conanProfileObject.conanPythonInterpreter, ConanEnv.buildEnv, commandBuilder!, configWorkspace.commandContainer.install);
+                    this.executeCommandActivateEnv(wsPath!, conanProfileObject.conanPythonInterpreter, utils.conan.ConanEnv.buildEnv, commandBuilder!, configWorkspace.commandContainer.install);
                     break;
                 }
                 case ConanCommand.activateRunEnv: {
-                    this.executeCommandActivateEnv(wsPath!, conanProfileObject.conanPythonInterpreter, ConanEnv.runEnv, commandBuilder!, configWorkspace.commandContainer.install);
+                    this.executeCommandActivateEnv(wsPath!, conanProfileObject.conanPythonInterpreter, utils.conan.ConanEnv.runEnv, commandBuilder!, configWorkspace.commandContainer.install);
                     break;
                 }
                 case ConanCommand.deactivateEnv: {
@@ -408,14 +408,14 @@ export class VSConanWorkspaceManager extends ExtensionManager {
      * @param commandBuilder Builder for Conan commands
      * @param configList List of possible configurations
      */
-    private executeCommandActivateEnv(wsPath: string, pythonInterpreter: string, whichEnv: ConanEnv, commandBuilder: CommandBuilder, configList: Array<ConfigCommandInstall>) {
+    private executeCommandActivateEnv(wsPath: string, pythonInterpreter: string, whichEnv: utils.conan.ConanEnv, commandBuilder: CommandBuilder, configList: Array<ConfigCommandInstall>) {
         let promiseIndex = this.getCommandConfigIndex(configList);
 
         promiseIndex.then(index => {
             if (index !== undefined) {
                 let selectedConfig = configList[index];
                 let cmd = commandBuilder.buildCommandInstall(wsPath, selectedConfig);
-                cmd = cmd?.split(" ").slice(1).join(" ") ?? ""; // cut of "install" from cmd
+                cmd = cmd?.slice(1) ?? []; // cut of "install" from cmd
                 this.workspaceEnvironment.activateEnvironment(whichEnv, selectedConfig.name, pythonInterpreter, cmd).then(this.updateStatusBar);
             }
         });
